@@ -69,4 +69,3 @@
         - sudo systemctl enable sssd.service --now
         - sudo systemctl enable oddjobd.service --now
         - sudo echo '+@syseng' >> /etc/passwd
-
