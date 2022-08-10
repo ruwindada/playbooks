@@ -1,0 +1,72 @@
+---
+- name: LDAP client install
+  hosts: hlist
+  remote_user: rocky
+  become: true
+  tasks:
+    
+    - name: Install needed packages
+      yum:
+        name: '{{item}}'
+        state: present
+        update_cache: true
+      loop:
+        - openldap-clients
+        - sssd-ldap
+        - oddjob-mkhomedir
+
+    - name: Copy ldap_ca.cert and set permission
+      copy:
+        src: /it/os_support/linux/scripts/ldap/rocky8/etc/ldap_ca.cert
+        dest: /etc/openldap/cacerts/
+        #backup: yes
+        mode: 444
+
+    - name: Create symlink of ldap_ca.cert
+      file:
+        src: /etc/openldap/cacerts/ldap_ca.cert
+        dest: /etc/openldap/cacerts/3513523f.0
+        state: link
+
+    - name: Copy sssd.conf
+      copy:
+        src: /it/os_support/linux/scripts/ldap/rocky8/etc/sssd/sssd.conf
+        dest: /etc/sssd/sssd.conf
+
+    - name: Set permission
+      file:
+        path: /etc/sssd/sssd.conf
+        owner: root
+        group: root
+        mode: 600
+
+    - name: Stopping sssd service
+      service:
+        name: sssd
+        state: stopped
+
+    - name: Sleep for few seconds
+      wait_for: 
+        delay: 10
+        timeout: 10
+
+    - name: Start sssd service
+      service:
+        name: sssd
+        state: started
+        enabled: true
+
+    - name: mkdir nfshome
+      file:
+        path: /nfshome
+        state: directory
+
+    - name: Run some commands 
+      command: "{{item}}"
+      with_items:
+        - sudo openssl rehash /etc/openldap/cacerts
+        - sudo authselect select sssd with-mkhomedir --force
+        - sudo systemctl enable sssd.service --now
+        - sudo systemctl enable oddjobd.service --now
+        - sudo echo '+@syseng' >> /etc/passwd
+

@@ -1,0 +1,53 @@
+Q5)
+You get a requirement to implement httpd_firewall.yaml to install httdp and firewalld and start services. Tasks are followings.
+
+1. Install httpd and set it to start at boot
+2. Install firewalld and set it to start at boot
+3. Add firewall rule to enable http service
+4. Get httpd config from http://classroom.example.com/materials/vhost.conf and extract to /etc/httpd/conf.d/vhost.conf.
+5. Add a line to existing /etc/www/html/index.html file with message "This messege is from server# ". 
+(Server# must be replaced with actual node serving the content)
+##################################################
+##################################################
+
+---
+- name: Install and start httpd with firewall on
+  hosts: servers
+  become: true
+  tasks:
+    - name: Install httpd and firewall
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - httpd
+        - firewalld
+        
+    - name: Start httpd and firewall
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - httpd
+        - firewalld
+
+    - name: Add firewall rule to allow httpd
+      firewalld:
+        service: http
+        permanent: true
+        state: enabled
+        immediate: true
+    
+    - name: Add vhost config
+      get_url: 
+        url: http://classroom.example.com/content/course/do407/ansible2.3/materials/task_control/https.conf
+        dest: /etc/httpd/conf.d/vhost.conf
+
+    - name: Add node name to index.html
+      lineinfile:
+         path: /var/www/html/index.html 
+         regexp: "Hello node xxx"
+         line: "Hello node {{ansible_hostname}}"
+         create: yes
+...

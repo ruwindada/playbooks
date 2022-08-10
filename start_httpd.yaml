@@ -1,0 +1,11 @@
+---
+- name: Start apache
+  hosts: serverb
+  remote_user: vagrant
+  become: true
+  tasks:
+    - name: Start apache
+      service:
+        name: httpd
+        state: started
+        enabled: yes
